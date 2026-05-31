@@ -1,0 +1,40 @@
+name: Pokemon Card Scraper
+
+on:
+  schedule:
+    # 12時間おき（UTC 0:00と12:00 = 日本時間 9:00と21:00）
+    - cron: '0 0,12 * * *'
+  workflow_dispatch: # 手動で実行ボタンも押せるようにする
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # CSVを保存するために書き込み権限を与える
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 pandas playwright
+          python -m playwright install chromium
+
+      - name: Run scraper
+        run: python scraper.py
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add price_history.csv
+          git commit -m "Update prices: $(date)" || echo "No changes to commit"
+          git push
+          
